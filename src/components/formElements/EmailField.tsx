@@ -1,33 +1,55 @@
-import React, { useState, useRef } from "react";
-import EmailFieldProps from "../../types/EmailFieldProps";
+import React, { useRef, useContext, useEffect } from "react";
+import { FormContext } from "../contexts/FormProvider"; // Adjust path as necessary
+import EmailFieldProps from "../../types/EmailFieldProps"; // Adjust path as necessary
+
 const EmailField: React.FC<EmailFieldProps> = ({
   styles = {},
   className = "",
   isRequired = false,
   placeholder = "",
+  name, // Ensure the name prop is passed to identify this field
 }) => {
-  const [error, setError] = useState("");
-  const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Accessing the form context
+  const formContext = useContext(FormContext);
+  if (!formContext) {
+    throw new Error("EmailField must be used within a FormProvider.");
+  }
+
+  const { handleChange, formData, addRef } = formContext;
+
+  // Register the input ref when the component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      addRef(name, inputRef); // Add ref to context
+    }
+  }, [name]); // Add addRef to dependencies
 
   // Email validation logic
   const validateEmail = (inputValue: string) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email regex
-    if (isRequired) {
-      if (inputValue === "") {
-        setError("Email is required.");
-      } else if (!emailPattern.test(inputValue)) {
-        setError("Please enter a valid email address.");
-      } else {
-        setError(""); // No error
-      }
+    let error = "";
+
+    if (isRequired && inputValue === "") {
+      error = "Email is required.";
+    } else if (inputValue && !emailPattern.test(inputValue)) {
+      error = "Please enter a valid email address.";
     }
+
+    // Update error state in form context
+    handleChange(`${name}_error`, error);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle input change and update form context
+  const handleChangeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    setValue(inputValue);
-    validateEmail(inputValue); // Validate the input as it changes
+
+    // Update the form context with the new value
+    handleChange(name, inputValue);
+
+    // Validate the input as it changes
+    validateEmail(inputValue);
   };
 
   return (
@@ -36,21 +58,23 @@ const EmailField: React.FC<EmailFieldProps> = ({
         type="email"
         id="email-input"
         ref={inputRef}
-        value={value}
+        value={formData[name] || ""}
         placeholder={placeholder}
-        onChange={handleChange}
+        onChange={handleChangeInput}
         required={isRequired}
         className={`bg-gray-50 border text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-blue-400 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 
           ${
-            error
+            formData[`${name}_error`]
               ? "border-red-500 focus:border-red-500 focus:ring-red-500 dark:border-red-500 dark:focus:ring-red-500"
               : "border-gray-300"
           } ${className}`}
         style={styles}
       />
       <div className="min-h-4">
-        {error && (
-          <div className="absolute text-red-500 text-sm mt-1">{error}</div>
+        {formData[`${name}_error`] && (
+          <div className="absolute text-red-500 text-sm mt-1">
+            {formData[`${name}_error`]}
+          </div>
         )}
       </div>
     </div>

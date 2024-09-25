@@ -35,7 +35,7 @@ const TextAreaField: React.FC<TextAreaFieldProps> = ({
   };
 
   return (
-    <div style={styles} className={`mb-4 ${className}`}>
+    <div className={`mb-4 ${className}`} style={styles}>
       <textarea
         value={value}
         onChange={handleChange}

@@ -1,29 +1,44 @@
+import React from "react";
 import "./App.css";
-import SearchField from "./components/formElements/searchField";
-// import NumberInputField from "./components/formElements/NumberInputField";
-import SliderField from "./components/formElements/SliderField";
+import { FormProvider } from "./components/contexts/FormProvider";
+import MyForm from "./components/Myform";
+import TextField from "./components/formElements/TextElementField";
+import EmailField from "./components/formElements/EmailField";
+import PhoneNumberField from "./components/formElements/PhoneNumberField";
+
 const App: React.FC = () => {
-  const names = [
-    "Alice",
-    "Bob",
-    "Charlie",
-    "David",
-    "Eve",
-    "Frank",
-    "Grace",
-    "Heidi",
-    "Ivan",
-    "Judy",
-  ]; // Example names array
+  const handleFormSubmit = (data: Record<string, string>) => {
+    console.log("Submitted Data: ", data);
+  };
 
   return (
-    <div className="max-w-sm mx-auto">
-      <SearchField
-        names={names} // Pass the names array to the component
-        styles={{ marginBottom: "1rem" }} // Additional styles if needed
-      />
-    </div>
+    <FormProvider>
+      <MyForm
+        onSubmit={handleFormSubmit}
+        buttonClasses="asdf"
+        buttonStyles={{ width: "100%" }}
+      >
+        <TextField name="firstname" placeholder="Enter firstname" isRequired />
+        <TextField name="lastname" placeholder="Enter lastname" />
+        <EmailField
+          name="email"
+          placeholder="Enter email"
+          isRequired
+          styles={{ width: "50%" }}
+        />
+        <PhoneNumberField
+          name="phoneNumber"
+          placeholder="Enter phone number"
+          isRequired
+          styles={{ width: "50%" }}
+          className="asdfffaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        />
+      </MyForm>
+    </FormProvider>
   );
 };
 
 export default App;
+// export default App;
+
+// export default MyForm;

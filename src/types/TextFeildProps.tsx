@@ -1,4 +1,5 @@
 export default interface TextFieldProps {
+  name: string;
   className?: string;
   styles?: React.CSSProperties;
   isRequired?: boolean;
