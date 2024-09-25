@@ -5,19 +5,31 @@ interface FormContextType {
   formData: Record<string, string>;
   handleChange: (name: string, value: string) => void;
   handleSubmit: (callback: (data: Record<string, any>) => void) => void;
-  addRef: (name: string, ref: React.RefObject<HTMLInputElement>) => void; // Add ref method
-  refs: Record<string, React.RefObject<HTMLInputElement>>; // Store refs
-  getRef: () => any; // Get ref method
+  addRef: (
+    name: string,
+    ref: React.RefObject<
+      HTMLInputElement | HTMLDivElement | HTMLTextAreaElement
+    >
+  ) => void;
+  refs: Record<
+    string,
+    React.RefObject<HTMLInputElement | HTMLDivElement | HTMLTextAreaElement>
+  >; // Store refs
+  getRef: (
+    name: string
+  ) =>
+    | React.RefObject<HTMLInputElement | HTMLDivElement | HTMLTextAreaElement>
+    | undefined; // Get ref method
 }
 
-// Initialize the context (without undefined)
+// Initialize the context
 export const FormContext = createContext<FormContextType>({
   formData: {},
   handleChange: () => {},
   handleSubmit: () => {},
   addRef: () => {},
   refs: {},
-  getRef: () => any,
+  getRef: () => undefined, // Set default to return undefined
 });
 
 // Create the FormProvider
@@ -28,7 +40,10 @@ interface FormProviderProps {
 export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [refs, setRefs] = useState<
-    Record<string, React.RefObject<HTMLInputElement>>
+    Record<
+      string,
+      React.RefObject<HTMLInputElement | HTMLDivElement | HTMLTextAreaElement>
+    >
   >({}); // Store refs
 
   // Handle field value changes
@@ -42,7 +57,7 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
   // Handle form submission
   const handleSubmit = (callback: (data: Record<string, any>) => void) => {
     let hasError = false;
-    console.log("Form Data: ", refs);
+    console.log("Form Data: ", formData);
     // Check for errors in form data
     for (const key in formData) {
       if (key.endsWith("_error") && formData[key]) {
@@ -57,7 +72,7 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
 
     // If there's an error, do not proceed with submission
     if (!hasError) {
-      console.log(FormData);
+      console.log(formData);
       alert("Submitting form data");
       callback(formData); // Trigger the callback with form data
     } else {
@@ -66,7 +81,12 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
   };
 
   // Add ref method
-  const addRef = (name: string, ref: React.RefObject<HTMLInputElement>) => {
+  const addRef = (
+    name: string,
+    ref: React.RefObject<
+      HTMLInputElement | HTMLDivElement | HTMLTextAreaElement
+    >
+  ) => {
     setRefs((prevRefs) => ({
       ...prevRefs,
       [name]: ref,
@@ -74,8 +94,12 @@ export const FormProvider: React.FC<FormProviderProps> = ({ children }) => {
   };
 
   // Get ref method
-  const getRef = () => {
-    return refs;
+  const getRef = (
+    name: string
+  ):
+    | React.RefObject<HTMLInputElement | HTMLDivElement | HTMLTextAreaElement>
+    | undefined => {
+    return refs[name]; // Return the specific ref based on name
   };
 
   return (

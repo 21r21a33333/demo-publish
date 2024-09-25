@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useRef, useEffect, useContext } from "react";
+import { FormContext } from "../contexts/FormProvider";
 
 interface NumberInputFieldProps {
+  name: string; // Unique name for form context
   placeholder?: string; // Placeholder text for the input
   isRequired?: boolean; // Whether the field is required
   min?: number; // Minimum value for the input
@@ -10,6 +12,7 @@ interface NumberInputFieldProps {
 }
 
 const NumberInputField: React.FC<NumberInputFieldProps> = ({
+  name,
   placeholder = "Enter a number",
   isRequired = false,
   min,
@@ -17,56 +20,73 @@ const NumberInputField: React.FC<NumberInputFieldProps> = ({
   styles = {},
   className = "",
 }) => {
-  const [value, setValue] = useState<number | string>(""); // State to store the input value
-  const [error, setError] = useState<string>(""); // State to store the error message
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
+  // Access form context
+  const formContext = useContext(FormContext);
+  if (!formContext) {
+    throw new Error("NumberInputField must be used within a FormProvider.");
+  }
 
-    // Check if the input is empty
-    if (isRequired && !inputValue) {
-      setError("This field is required.");
+  const { handleChange, formData, addRef } = formContext;
+
+  // Register the input ref when component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      addRef(name, inputRef);
+    }
+  }, [name]);
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let inputValue = e.target.value;
+
+    let errorMessage = "";
+
+    // Validate value
+    if (isRequired && inputValue === "") {
+      errorMessage = "This field is required and enter valid number.";
     } else {
       const numberValue = parseFloat(inputValue);
       if (isNaN(numberValue)) {
-        setError("Please enter a valid number.");
+        errorMessage = "Please enter a valid number.";
       } else if (min !== undefined && numberValue < min) {
-        setError(`Value must be at least ${min}.`);
+        errorMessage = `Value must be at least ${min}.`;
       } else if (max !== undefined && numberValue > max) {
-        setError(`Value must not exceed ${max}.`);
-      } else {
-        setError(""); // Clear error if valid
+        errorMessage = `Value must not exceed ${max}.`;
       }
     }
 
-    setValue(inputValue);
+    handleChange(name, inputValue ? inputValue.toString() : "");
+    handleChange(`${name}_error`, errorMessage);
   };
 
   return (
     <div style={styles} className={`mb-4 ${className}`}>
-      <label
-        htmlFor="number-input"
-        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-      >
-        Select a number:
-      </label>
       <input
         type="number"
-        id="number-input"
-        value={value}
-        onChange={handleChange}
+        id={name}
+        ref={inputRef}
+        value={formData[name] || ""}
+        onChange={handleInputChange}
         placeholder={placeholder}
         className={`bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
           focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
           dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white 
           dark:focus:ring-blue-500 dark:focus:border-blue-500 ${
-            error ? "border-red-500" : "border-gray-300"
+            formData[`${name}_error`] ? "border-red-500" : "border-gray-300"
           }`}
         required={isRequired}
         min={min} // Set min value if provided
         max={max} // Set max value if provided
       />
-      {error && <div className="text-red-500 text-sm mt-1">{error}</div>}
+      <div className="min-h-4">
+        {formData[`${name}_error`] && (
+          <div className="text-red-500 text-sm mt-1">
+            {formData[`${name}_error`]}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

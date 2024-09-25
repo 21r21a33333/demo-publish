@@ -62,6 +62,7 @@ const PhoneNumberField: React.FC<PhoneNumberFieldProps> = ({
   return (
     <div className="relative mb-4">
       <input
+        id={name}
         type="tel" // Use 'tel' for phone number input
         ref={inputRef}
         value={formData[name] || ""}

@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useContext, useCallback } from "react";
+import { FormContext } from "../contexts/FormProvider";
 
 interface SliderFieldProps {
+  name: string; // Unique identifier for form context
   min?: number; // Minimum value for the slider
   max?: number; // Maximum value for the slider
   initialValue?: number; // Initial value for the slider
@@ -9,61 +11,69 @@ interface SliderFieldProps {
 }
 
 const SliderField: React.FC<SliderFieldProps> = ({
+  name,
   min = 0,
   max = 100,
   initialValue = 50,
   styles = {},
   className = "",
 }) => {
-  const [value, setValue] = useState(initialValue); // State to store the slider value
-  const [throttleTimeout, setThrottleTimeout] = useState<number | null>(null);
+  const sliderRef = useRef<HTMLInputElement>(null);
+
+  // Access form context
+  const formContext = useContext(FormContext);
+  if (!formContext) {
+    throw new Error("SliderField must be used within a FormProvider.");
+  }
+
+  const { handleChange, formData, addRef } = formContext;
 
   // Throttling function
-  const throttle = (func: Function, limit: number) => {
-    return function (...args: any) {
-      if (throttleTimeout) return; // If there is already a timeout, do nothing
-      func.apply(this, args);
-      const timeout = window.setTimeout(() => {
-        setThrottleTimeout(null); // Clear timeout
-      }, limit);
-      setThrottleTimeout(timeout); // Set the timeout
-    };
+  const throttle = useCallback(
+    (func: (...args: any[]) => void, limit: number) => {
+      let lastFunc: ReturnType<typeof setTimeout>;
+      let lastRan: number;
+
+      return function (...args: any[]) {
+        if (!lastRan) {
+          func(...args);
+          lastRan = Date.now();
+        } else {
+          clearTimeout(lastFunc);
+          lastFunc = setTimeout(() => {
+            if (Date.now() - lastRan >= limit) {
+              func(...args);
+              lastRan = Date.now();
+            }
+          }, limit - (Date.now() - lastRan));
+        }
+      };
+    },
+    []
+  );
+
+  const handleSliderChange = (value: number) => {
+    handleChange(name, value.toString());
   };
 
-  // Scroll event handler
-  const handleScroll = throttle((event: WheelEvent) => {
-    event.preventDefault();
-    const delta = Math.sign(event.deltaY); // Determine scroll direction
-    setValue((prevValue) => {
-      const newValue = prevValue + (delta > 0 ? -1 : 1); // Decrease value on scroll down, increase on scroll up
-      return Math.min(max, Math.max(min, newValue)); // Clamp value between min and max
-    });
-  }, 100); // Throttle to 100ms
+  // Throttled version of handleSliderChange
+  const throttledHandleChange = throttle(handleSliderChange, 100);
 
-  // Attach scroll event listener
+  // Register slider ref on component mount
   useEffect(() => {
-    window.addEventListener("wheel", handleScroll, { passive: false });
+    if (sliderRef.current) {
+      addRef(name, sliderRef);
+    }
+    // Set initial value
+    handleChange(name, initialValue.toString());
+  }, [name, initialValue]);
 
-    return () => {
-      window.removeEventListener("wheel", handleScroll);
-      if (throttleTimeout) {
-        window.clearTimeout(throttleTimeout); // Clear timeout on cleanup
-      }
-    };
-  }, [handleScroll, throttleTimeout]);
-
-  // Calculate the position of the tooltip based on the slider's value
-  const tooltipPosition = ((value - min) / (max - min)) * 100;
+  // Ensure values are numbers
+  const value = Number(formData[name]) || initialValue; // Convert to number
+  const tooltipPosition: number = ((value - min) / (max - min)) * 100;
 
   return (
     <div style={styles} className={`relative mb-4 ${className}`}>
-      <label
-        htmlFor="slider-input"
-        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-      >
-        Default range
-      </label>
-
       {/* Background for filled portion */}
       <div className="relative mb-1 h-2 bg-gray-200 rounded-lg dark:bg-gray-700">
         <div
@@ -85,12 +95,13 @@ const SliderField: React.FC<SliderFieldProps> = ({
       </div>
 
       <input
-        id="slider-input"
+        id={name}
+        ref={sliderRef}
         type="range"
         min={min}
         max={max}
         value={value}
-        onChange={(e) => setValue(Number(e.target.value))}
+        onChange={(e) => throttledHandleChange(Number(e.target.value))}
         className="w-full h-2 bg-transparent appearance-none cursor-pointer"
       />
 

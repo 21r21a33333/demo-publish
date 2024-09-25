@@ -8,6 +8,7 @@ interface MyFormProps {
   buttonStyles: React.CSSProperties;
   styles?: React.CSSProperties;
   className?: string;
+  formtitle: string;
 }
 
 const MyForm: React.FC<MyFormProps> = ({
@@ -17,6 +18,7 @@ const MyForm: React.FC<MyFormProps> = ({
   buttonStyles = {},
   styles = {},
   className = "",
+  formtitle = "",
 }) => {
   const { handleSubmit } = useContext(FormContext) || {
     handleSubmit: () => console.warn("FormContext is not available."),
@@ -27,12 +29,21 @@ const MyForm: React.FC<MyFormProps> = ({
   };
 
   return (
-    <form className={className} onSubmit={onFormSubmit} style={styles}>
+    <form
+      className={
+        `mb-0 mt-6 space-y-4 rounded-lg p-4 shadow-lg sm:p-6 lg:p-8` + className
+      }
+      onSubmit={onFormSubmit}
+      style={styles}
+    >
+      <h1 className="text-center text-2xl font-bold text-blue-600 sm:text-3xl">
+        {formtitle}
+      </h1>
       {children}
       <button
         type="submit"
         className={`w-full bg-blue-500 text-white p-2 rounded-lg ${buttonClasses}`}
-        styles={buttonStyles}
+        style={buttonStyles}
       >
         Submit
       </button>

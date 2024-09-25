@@ -56,7 +56,7 @@ const EmailField: React.FC<EmailFieldProps> = ({
     <div className="relative mb-4">
       <input
         type="email"
-        id="email-input"
+        id={name}
         ref={inputRef}
         value={formData[name] || ""}
         placeholder={placeholder}

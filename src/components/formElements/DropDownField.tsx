@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useEffect, useContext, useState } from "react";
 import { DropdownProps } from "../../types/DropDownFieldProps";
+import { FormContext } from "../contexts/FormProvider";
 
 const DropDownField: React.FC<DropdownProps> = ({
   options,
+  name, // Name prop for form identification
   placeholder = "Select an option",
   isRequired = false,
   styles = {},
@@ -10,30 +12,45 @@ const DropDownField: React.FC<DropdownProps> = ({
   listItemsClassName = "",
   listItemstyles = {},
 }) => {
-  const [selectedValue, setSelectedValue] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-  const [isOpen, setIsOpen] = useState(false); // State to manage dropdown open/close
+  const inputRef = useRef<HTMLDivElement>(null);
 
-  const handleChange = (value: string) => {
-    setSelectedValue(value);
-    setIsOpen(false); // Close dropdown on selection
-    if (isRequired && value === "") {
-      setError(true);
-    } else {
-      setError(false);
+  // Access the form context
+  const formContext = useContext(FormContext);
+  if (!formContext) {
+    throw new Error("DropDownField must be used within a FormProvider.");
+  }
+
+  const { handleChange, formData, addRef } = formContext;
+  const [isOpen, setIsOpen] = useState(false); // Manage dropdown open/close
+
+  // Register the dropdown ref when the component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      addRef(name, inputRef);
     }
+  }, [name]);
+
+  // Handle option change
+  const handleOptionChange = (value: string) => {
+    handleChange(name, value);
+    setIsOpen(false); // Close dropdown after selection
+    handleChange(
+      `${name}_error`,
+      isRequired && !value ? "This field is required" : ""
+    );
   };
 
   return (
     <div style={styles} className={`relative mb-4 ${className}`}>
       <button
-        onClick={() => setIsOpen(!isOpen)} // Toggle dropdown on click
+        id={name}
+        onClick={() => setIsOpen(!isOpen)} // Toggle dropdown open/close
         className={`text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none 
           focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center 
           dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800`}
       >
-        {selectedValue
-          ? options.find((opt) => opt.value === selectedValue)?.label
+        {formData[name]
+          ? options.find((opt) => opt.value === formData[name])?.label
           : placeholder}
         <svg
           className="w-2.5 h-2.5 ms-3"
@@ -60,7 +77,7 @@ const DropDownField: React.FC<DropdownProps> = ({
             {options.map((option, index) => (
               <li key={index}>
                 <div
-                  onClick={() => handleChange(option.value)} // Change value on click
+                  onClick={() => handleOptionChange(option.value)} // Change value on click
                   className={
                     "block bg-white shadow max-w-xs mx-auto px-4 py-2 text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white cursor-pointer " +
                     `${listItemsClassName}`
@@ -74,9 +91,9 @@ const DropDownField: React.FC<DropdownProps> = ({
           </ul>
         </div>
       )}
-      {error && (
+      {formData[`${name}_error`] && (
         <div className="text-red-500 text-sm mt-1">
-          At least one option must be selected.
+          {formData[`${name}_error`]}
         </div>
       )}
     </div>

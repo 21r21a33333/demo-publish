@@ -3,6 +3,9 @@ import { FormContext } from "../contexts/FormProvider"; // Adjust path as necess
 import { defaultValidators } from "../../utils/defaults";
 import TextFieldProps from "../../types/TextFeildProps";
 
+// Define the valid validator types
+type ValidatorType = keyof typeof defaultValidators;
+
 const TextField: React.FC<TextFieldProps> = ({
   styles = {},
   className = "",
@@ -44,8 +47,8 @@ const TextField: React.FC<TextFieldProps> = ({
     // Use built-in validation based on the "type" prop, or fallback to custom validator
     if (validator) {
       isValid = validator(inputValue);
-    } else if (type && defaultValidators[type]) {
-      isValid = defaultValidators[type](inputValue);
+    } else if (type && defaultValidators[type as ValidatorType]) {
+      isValid = defaultValidators[type as ValidatorType](inputValue);
     } else {
       isValid = defaultValidators.alphanumeric(inputValue);
     }
@@ -69,6 +72,7 @@ const TextField: React.FC<TextFieldProps> = ({
   return (
     <div className="relative mb-4">
       <input
+        id={name}
         ref={inputRef}
         value={formData[name] || ""}
         placeholder={placeholder}
